@@ -14,21 +14,23 @@ from .utils import paginating
 filtered_posts = Post.objects.select_related(
     'category',
     'location',
-    'author').filter(
-    pub_date__lte=timezone.now(),
-    is_published=True,
-    category__is_published=True
-).annotate(
-    comment_count=Count('commented_post')
-).order_by('-pub_date')
+    'author'
+    ).filter(
+        pub_date__lte=timezone.now(),
+        is_published=True,
+        category__is_published=True
+        ).annotate(
+            comment_count=Count('commented_post')
+            ).order_by('-pub_date')
 
 # All posts
-all_posts = Post.objects.select_related(
-            'location', 'author', 'author')
+all_posts = Post.objects.select_related('location',
+                                        'author',
+                                        'category')
 
 # All_comments
-all_comments = Comment.objects.select_related(
-            'author', 'post')
+all_comments = Comment.objects.select_related('author',
+                                              'post')
 
 
 class PostListView(ListView):
@@ -72,15 +74,14 @@ def show_profile(request, username):
                                 username=username)
     if username == request.user.username:
         chosen_posts = profile.author_posts.all().annotate(
-             comment_count=Count('commented_post')
-             ).order_by('-pub_date')
+             comment_count=Count('commented_post')).order_by('-pub_date')
     else:
         chosen_posts = profile.author_posts.filter(
             Q(is_published=True)
             & Q(category__is_published=True)
             & Q(pub_date__lte=timezone.now())).annotate(
             comment_count=Count('commented_post')
-            ).order_by('-pub_date')
+        ).order_by('-pub_date')
     page_obj = paginating(chosen_posts, request)
     return render(request, 'blog/profile.html',
                   {'profile': profile, 'page_obj': page_obj})
