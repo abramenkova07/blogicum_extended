@@ -11,7 +11,7 @@ class UserForm(forms.ModelForm):
         fields = ('username', 'first_name', 'last_name', 'email',)
         widgets = {
             'email': forms.EmailInput(attrs={'type': 'email'})
-            }
+        }
 
 
 class PostForm(forms.ModelForm):

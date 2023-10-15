@@ -16,11 +16,11 @@ filtered_posts = Post.objects.select_related(
     'location',
     'author'
 ).filter(
-        pub_date__lte=timezone.now(),
-        is_published=True,
-        category__is_published=True
+    pub_date__lte=timezone.now(),
+    is_published=True,
+    category__is_published=True
 ).annotate(
-            comment_count=Count('commented_post')
+    comment_count=Count('commented_post')
 ).order_by('-pub_date')
 
 # All posts
