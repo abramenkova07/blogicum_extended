@@ -15,13 +15,13 @@ filtered_posts = Post.objects.select_related(
     'category',
     'location',
     'author'
-    ).filter(
+).filter(
         pub_date__lte=timezone.now(),
         is_published=True,
         category__is_published=True
-        ).annotate(
+).annotate(
             comment_count=Count('commented_post')
-            ).order_by('-pub_date')
+).order_by('-pub_date')
 
 # All posts
 all_posts = Post.objects.select_related('location',
@@ -73,8 +73,8 @@ def show_profile(request, username):
     profile = get_object_or_404(get_user_model(),
                                 username=username)
     if username == request.user.username:
-        chosen_posts = profile.author_posts.all().annotate(
-             comment_count=Count('commented_post')).order_by('-pub_date')
+        chosen_posts = profile.author_posts.all(
+        ).annotate(comment_count=Count('commented_post')).order_by('-pub_date')
     else:
         chosen_posts = profile.author_posts.filter(
             Q(is_published=True)
