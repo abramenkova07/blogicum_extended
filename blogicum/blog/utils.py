@@ -23,7 +23,7 @@ def filtered_posts_queryset():
             category__is_published=True
             ).annotate(
                 comment_count=Count('commented_post')
-                ).order_by('-pub_date')
+            ).order_by('-pub_date')
 
 
 def all_comments_queryset():
@@ -34,7 +34,7 @@ def all_comments_queryset():
 
 def published_category_queryset():
     return Category.objects.all().filter(
-                is_published=True)
+        is_published=True)
 
 
 def paginate_queryset(queryset, request):

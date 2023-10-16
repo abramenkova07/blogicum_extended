@@ -206,7 +206,7 @@ class ProfileDetailView(DetailView):
                 category__is_published=True,
                 pub_date__lte=timezone.now()).annotate(
                     comment_count=Count('commented_post')
-                    ).order_by('-pub_date')
+            ).order_by('-pub_date')
         page_obj = paginate_queryset(chosen_posts, self.request)
         context['page_obj'] = page_obj
         context['profile'] = self.object
