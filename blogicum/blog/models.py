@@ -39,6 +39,7 @@ class Category(BaseModel, CommonInfoBaseModel):
     )
 
     class Meta:
+        ordering = ('created_at',)
         verbose_name = 'категория'
         verbose_name_plural = 'Категории'
 
@@ -53,6 +54,7 @@ class Location(BaseModel):
     )
 
     class Meta:
+        ordering = ('created_at',)
         verbose_name = 'местоположение'
         verbose_name_plural = 'Местоположения'
 
@@ -93,6 +95,7 @@ class Post(BaseModel, CommonInfoBaseModel):
                               verbose_name='Картинка')
 
     class Meta:
+        ordering = ('-pub_date',)
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
 
