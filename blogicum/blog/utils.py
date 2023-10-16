@@ -21,9 +21,9 @@ def filtered_posts_queryset():
             pub_date__lte=timezone.now(),
             is_published=True,
             category__is_published=True
-          ).annotate(
+    ).annotate(
             comment_count=Count('commented_post')
-          ).order_by('-pub_date')
+    ).order_by('-pub_date')
 
 
 def all_comments_queryset():
