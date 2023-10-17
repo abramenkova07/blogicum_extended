@@ -19,17 +19,37 @@ from .utils import (all_comments_queryset,
                     published_category_queryset)
 
 
-class PostListView(ListView):
+class PostModelMixin:
     model = Post
+
+
+class PostPkMixin:
+    pk_url_kwarg = 'post_id'
+
+
+class PostModifyMixin:
+    template_name = 'blog/create.html'
+
+    def get_success_url(self):
+        return reverse('blog:profile', kwargs={'username': self.request.user})
+
+
+class PostFormMixin:
+    form_class = PostForm
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+
+class PostListView(ListView, PostModelMixin):
     paginate_by = SHOWED_ITEMS
     template_name = 'blog/index.html'
     queryset = filtered_posts_queryset()
 
 
-class PostDetailView(DetailView):
-    model = Post
+class PostDetailView(DetailView, PostModelMixin, PostPkMixin):
     template_name = 'blog/detail.html'
-    pk_url_kwarg = 'post_id'
 
     def get_object(self, queryset=all_posts_queryset()):
         instance = get_object_or_404(queryset, pk=self.kwargs['post_id'])
@@ -47,25 +67,13 @@ class PostDetailView(DetailView):
         return context
 
 
-class PostMixin:
-    model = Post
-    template_name = 'blog/create.html'
-
-    def get_success_url(self):
-        return reverse('blog:profile', kwargs={'username': self.request.user})
+class PostCreateView(LoginRequiredMixin, PostModelMixin,
+                     PostModifyMixin, PostFormMixin, CreateView):
+    pass
 
 
-class PostCreateView(LoginRequiredMixin, PostMixin, CreateView):
-    form_class = PostForm
-
-    def form_valid(self, form):
-        form.instance.author = self.request.user
-        return super().form_valid(form)
-
-
-class PostUpdateView(LoginRequiredMixin, PostMixin, UpdateView):
-    form_class = PostForm
-    pk_url_kwarg = 'post_id'
+class PostUpdateView(LoginRequiredMixin, PostModelMixin,
+                     PostModifyMixin, PostFormMixin, PostPkMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -73,19 +81,14 @@ class PostUpdateView(LoginRequiredMixin, PostMixin, UpdateView):
             return redirect('blog:post_detail', self.kwargs['post_id'])
         return super().dispatch(request, *args, **kwargs)
 
-    def form_valid(self, form):
-        form.instance.author = self.request.user
-        return super().form_valid(form)
-
     def get_success_url(self):
         return reverse('blog:post_detail', kwargs={
             'post_id': self.kwargs['post_id']})
 
 
-class PostDeleteView(LoginRequiredMixin, PostMixin, DeleteView,
-                     ModelFormMixin):
+class PostDeleteView(LoginRequiredMixin, PostModelMixin, PostModifyMixin,
+                     PostPkMixin, DeleteView, ModelFormMixin):
     fields = ('text', 'title', 'pub_date', 'location', 'image')
-    pk_url_kwarg = 'post_id'
 
     def dispatch(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -119,7 +122,7 @@ class CategoryDetailView(DetailView):
         return context
 
 
-class CommentMixin:
+class CommentModifyMixin:
     model = Comment
     template_name = 'blog/comment.html'
 
@@ -128,28 +131,11 @@ class CommentMixin:
             'post_id': self.kwargs['post_id']})
 
 
-class CommentCreateView(LoginRequiredMixin, CommentMixin, CreateView):
-    chosen_post = None
+class CommentFormMixin:
     form_class = CommentForm
 
-    def get_object(self, queryset=filtered_posts_queryset()):
-        instance = get_object_or_404(
-            queryset,
-            pk=self.kwargs['post_id'])
-        return instance
 
-    def dispatch(self, request, *args, **kwargs):
-        self.chosen_post = self.get_object()
-        return super().dispatch(request, *args, **kwargs)
-
-    def form_valid(self, form):
-        form.instance.author = self.request.user
-        form.instance.post = self.chosen_post
-        return super().form_valid(form)
-
-
-class CommentUpdateView(LoginRequiredMixin, CommentMixin, UpdateView):
-    form_class = CommentForm
+class CommentMethodsMixin:
 
     def get_object(self, queryset=all_comments_queryset()):
         instance = get_object_or_404(
@@ -163,6 +149,26 @@ class CommentUpdateView(LoginRequiredMixin, CommentMixin, UpdateView):
         if instance.author != self.request.user:
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
+
+
+class CommentCreateView(LoginRequiredMixin, CommentModifyMixin,
+                        CommentFormMixin, CreateView):
+    chosen_post = None
+
+    def get_object(self, queryset=filtered_posts_queryset()):
+        instance = get_object_or_404(
+            queryset,
+            pk=self.kwargs['post_id'])
+        return instance
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        form.instance.post = self.get_object()
+        return super().form_valid(form)
+
+
+class CommentUpdateView(LoginRequiredMixin, CommentModifyMixin,
+                        CommentFormMixin, CommentMethodsMixin, UpdateView):
 
     def form_valid(self, form):
         form.instance.author = self.request.user
@@ -172,20 +178,9 @@ class CommentUpdateView(LoginRequiredMixin, CommentMixin, UpdateView):
         return super().form_valid(form)
 
 
-class CommentDeleteView(LoginRequiredMixin, CommentMixin, DeleteView):
-
-    def get_object(self, queryset=all_comments_queryset()):
-        instance = get_object_or_404(
-            queryset,
-            post=self.kwargs['post_id'],
-            pk=self.kwargs['comment_id'])
-        return instance
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
+class CommentDeleteView(LoginRequiredMixin, CommentModifyMixin,
+                        CommentMethodsMixin, DeleteView):
+    pass
 
 
 class ProfileDetailView(DetailView):
