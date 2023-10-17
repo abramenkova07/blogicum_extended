@@ -42,13 +42,13 @@ class PostFormMixin:
         return super().form_valid(form)
 
 
-class PostListView(ListView, PostModelMixin):
+class PostListView(PostModelMixin, ListView):
     paginate_by = SHOWED_ITEMS
     template_name = 'blog/index.html'
     queryset = filtered_posts_queryset()
 
 
-class PostDetailView(DetailView, PostModelMixin, PostPkMixin):
+class PostDetailView(PostModelMixin, PostPkMixin, DetailView):
     template_name = 'blog/detail.html'
 
     def get_object(self, queryset=all_posts_queryset()):
@@ -73,7 +73,7 @@ class PostCreateView(LoginRequiredMixin, PostModelMixin,
 
 
 class PostUpdateView(LoginRequiredMixin, PostModelMixin,
-                     PostModifyMixin, PostFormMixin, PostPkMixin, UpdateView):
+                     PostPkMixin, PostModifyMixin, PostFormMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -86,8 +86,8 @@ class PostUpdateView(LoginRequiredMixin, PostModelMixin,
             'post_id': self.kwargs['post_id']})
 
 
-class PostDeleteView(LoginRequiredMixin, PostModelMixin, PostModifyMixin,
-                     PostPkMixin, DeleteView, ModelFormMixin):
+class PostDeleteView(LoginRequiredMixin, PostModelMixin, PostPkMixin,
+                     PostModifyMixin, DeleteView, ModelFormMixin):
     fields = ('text', 'title', 'pub_date', 'location', 'image')
 
     def dispatch(self, request, *args, **kwargs):
