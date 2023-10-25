@@ -7,14 +7,14 @@ from .models import Comment, Category, Post
 
 
 def all_posts_queryset():
-    return Post.objects.select_related(
+    return Post.objects.prefetch_related('tags').select_related(
         'category',
         'location',
         'author').order_by('-pub_date')
 
 
 def filtered_posts_queryset():
-    return Post.objects.select_related(
+    return Post.objects.prefetch_related('tags').select_related(
         'category',
         'location',
         'author').filter(

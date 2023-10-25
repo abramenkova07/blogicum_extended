@@ -6,6 +6,9 @@
         <img src="{% static 'img/logo.png' %}" width="30" height="30" class="d-inline-block align-top" alt="">
         Блогикум
       </a>
+      <form role="search" action="{% url 'blog:index' %}" method="get">
+        <input class="form-control" type="search" name="q" placeholder="Поиск" aria-label="Search">
+      </form>
       {% with request.resolver_match.view_name as view_name %}
         <ul class="nav  nav-pills">
           <li class="nav-item">
@@ -16,6 +19,11 @@
           <li class="nav-item">
             <a class="nav-link {% if view_name == 'pages:rules' %} text-white {% endif %}" href="{% url 'pages:rules' %}">
               Правила
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if view_name == 'blog:random' %} text-white {% endif %}" href="{% url 'blog:random' %}">
+              Случайный пост
             </a>
           </li>
           {% if user.is_authenticated %}

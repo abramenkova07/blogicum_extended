@@ -1,7 +1,9 @@
+from random import choice
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import (CreateView, DeleteView,
                                   DetailView, ListView, UpdateView)
@@ -11,7 +13,7 @@ from django.utils import timezone
 
 from .constants import SHOWED_ITEMS
 from .forms import CommentForm, PostForm, UserForm
-from .models import Category, Comment, Post
+from .models import Category, Comment, Post, Tag
 from .utils import (all_comments_queryset,
                     all_posts_queryset,
                     filtered_posts_queryset,
@@ -34,6 +36,15 @@ class PostModifyMixin:
         return reverse('blog:profile', kwargs={'username': self.request.user})
 
 
+class DispatchMixin:
+
+    def dispatch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.author != self.request.user:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+
 class PostFormMixin:
     form_class = PostForm
 
@@ -45,7 +56,38 @@ class PostFormMixin:
 class PostListView(PostModelMixin, ListView):
     paginate_by = SHOWED_ITEMS
     template_name = 'blog/index.html'
-    queryset = filtered_posts_queryset()
+
+    def get_queryset(self):
+        search = self.request.GET.get('q')
+        queryset = filtered_posts_queryset()
+        if search:
+            return queryset.filter(
+                Q(title__contains=search)
+                | Q(title__contains=search.lower())
+                | Q(title__contains=search.capitalize()))
+        elif self.kwargs.get('tag_slug'):
+            return queryset.filter(tags__slug=self.kwargs['tag_slug'])
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search'] = self.request.GET.get('q')
+        if self.kwargs.get('tag_slug'):
+            context['tag_slug'] = Tag.objects.get(
+                slug=self.kwargs.get('tag_slug'))
+        return context
+
+
+class RandomDetailView(PostModelMixin, DetailView):
+    template_name = 'blog/random.html'
+
+    def get_object(self, queryset=filtered_posts_queryset()):
+        return choice(queryset)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['number'] = self.object.pk
+        return context
 
 
 class PostDetailView(PostModelMixin, PostPkMixin, DetailView):
@@ -87,14 +129,9 @@ class PostUpdateView(LoginRequiredMixin, PostModelMixin,
 
 
 class PostDeleteView(LoginRequiredMixin, PostModelMixin, PostPkMixin,
-                     PostModifyMixin, DeleteView, ModelFormMixin):
+                     PostModifyMixin, DispatchMixin,
+                     DeleteView, ModelFormMixin):
     fields = ('text', 'title', 'pub_date', 'location', 'image')
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -138,28 +175,19 @@ class CommentFormMixin:
 class CommentMethodsMixin:
 
     def get_object(self, queryset=all_comments_queryset()):
-        instance = get_object_or_404(
+        return get_object_or_404(
             queryset,
             post=self.kwargs['post_id'],
             pk=self.kwargs['comment_id'])
-        return instance
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            raise PermissionDenied
-        return super().dispatch(request, *args, **kwargs)
 
 
 class CommentCreateView(LoginRequiredMixin, CommentModifyMixin,
                         CommentFormMixin, CreateView):
-    chosen_post = None
 
     def get_object(self, queryset=filtered_posts_queryset()):
-        instance = get_object_or_404(
+        return get_object_or_404(
             queryset,
             pk=self.kwargs['post_id'])
-        return instance
 
     def form_valid(self, form):
         form.instance.author = self.request.user
@@ -168,7 +196,8 @@ class CommentCreateView(LoginRequiredMixin, CommentModifyMixin,
 
 
 class CommentUpdateView(LoginRequiredMixin, CommentModifyMixin,
-                        CommentFormMixin, CommentMethodsMixin, UpdateView):
+                        CommentFormMixin, CommentMethodsMixin,
+                        DispatchMixin, UpdateView):
 
     def form_valid(self, form):
         form.instance.author = self.request.user
@@ -179,7 +208,7 @@ class CommentUpdateView(LoginRequiredMixin, CommentModifyMixin,
 
 
 class CommentDeleteView(LoginRequiredMixin, CommentModifyMixin,
-                        CommentMethodsMixin, DeleteView):
+                        CommentMethodsMixin, DispatchMixin, DeleteView):
     pass
 
 
@@ -214,10 +243,9 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     form_class = UserForm
 
     def get_object(self, queryset=get_user_model().objects.all()):
-        instance = get_object_or_404(
+        return get_object_or_404(
             queryset,
             username=self.request.user)
-        return instance
 
     def get_success_url(self):
         return reverse('blog:profile', kwargs={'username': self.request.user})

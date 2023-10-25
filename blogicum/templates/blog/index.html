@@ -3,10 +3,18 @@
   Лента записей
 {% endblock %}
 {% block content %}
+{% if search %}
+  <h1 class="text-center">Публикации по запросу - {{ search }}</h1>
+{% elif '/tag/' in request.path %}
+  <h1 class="text-center">Публикации по тегу - {{ tag_slug }}</h1>
+{% endif %}
   {% for post in page_obj %}
     <article class="mb-5">
       {% include "includes/post_card.html" %}
     </article>
+    {% empty %}
+      <p>К сожалению, нет подходящих публикаций по запросу - {{ search }}.</p>
+      <a href="{% url 'blog:index' %}">Вернуться на главную</a>
   {% endfor %}
   {% include "includes/paginator.html" %}
 {% endblock %}

@@ -30,4 +30,7 @@ urlpatterns = [
          name='delete_comment'),
     path('category/<slug:category_slug>/', views.CategoryDetailView.as_view(),
          name='category_posts'),
+    path('tag/<slug:tag_slug>/', views.PostListView.as_view(),
+         name='tag'),
+    path('random/', views.RandomDetailView.as_view(), name='random')
 ]

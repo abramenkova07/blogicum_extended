@@ -62,6 +62,19 @@ class Location(BaseModel):
         return self.name
 
 
+class Tag(models.Model):
+    tag = models.CharField(max_length=20, verbose_name='Тег')
+    slug = models.SlugField(max_length=20, verbose_name='Слаг')
+
+    class Meta:
+        ordering = ('tag',)
+        verbose_name = 'тег'
+        verbose_name_plural = 'Теги'
+
+    def __str__(self):
+        return self.tag
+
+
 class Post(BaseModel, CommonInfoBaseModel):
     text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField(
@@ -93,6 +106,9 @@ class Post(BaseModel, CommonInfoBaseModel):
     image = models.ImageField(blank=True,
                               upload_to='posts_images',
                               verbose_name='Картинка')
+    tags = models.ManyToManyField(Tag, verbose_name='Теги', blank=True,
+                                  help_text='''Удерживайте Ctrl
+                                  для выбора нескольких вариантов.''')
 
     class Meta:
         ordering = ('-pub_date',)
@@ -120,4 +136,4 @@ class Comment(models.Model):
         verbose_name_plural = 'Комментарии'
 
     def __str__(self):
-        return self.author
+        return self.text
