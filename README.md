@@ -12,15 +12,35 @@
 
 ## Развертывание проекта локально
 
-Нужно склонировать к себе текущий проект и перейти в папку проекта: <br>
+Чтобы запустить проект нужно: <br>
+1. Клонировать репозиторий и перейти в него в командной строке:
 ```bash
-git clone https://github.com/abramenkova07/blogicum_extended.git
-cd blogicum_extended
+git clone git@github.com:abramenkova07/blogicum_extended.git
 ```
-Необходимо создать виртуальное окружение: <br>
+```bash
+cd blogicum_extended/
+```
+2. Cоздать и активировать виртуальное окружение:
 ```bash
 python -m venv venv
+```
+```bash
 source venv/Scripts/activate
+```
+3. Установить зависимости из файла requirements.txt:
+```bash
+python -m pip install --upgrade pip
+```
+```bash
+pip install -r requirements.txt
+```
+4. Выполнить миграции:
+```bash
+python manage.py migrate
+```
+5. Запустить проект:
+```bash
+python manage.py runserver
 ```
 #### Автор проекта:
 [Арина Абраменкова](https://github.com/abramenkova07)
